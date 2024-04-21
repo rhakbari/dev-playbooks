@@ -1,0 +1,57 @@
+---
+- name: Install Go
+  hosts: localhost
+  become: yes
+
+  vars:
+    go_version: "1.21.9"
+    go_install_dir: "/usr/local"
+
+  tasks:
+    # Create go.sh file before setting variables
+    - name: Create go.sh file
+      ansible.builtin.file:
+        path: /etc/profile.d/go.sh
+        state: touch
+
+    # Update apt cache (if Debian based)
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == 'Debian'
+
+    # Install required packages (if Debian based)
+    - name: Install required packages
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - wget
+        - tar
+      when: ansible_os_family == 'Debian'
+
+    - name: Download Go archive
+      get_url:
+        url: "https://golang.org/dl/go{{ go_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/go.tar.gz"
+
+    - name: Extract Go archive
+      ansible.builtin.unarchive:
+        src: "/tmp/go.tar.gz"
+        dest: "{{ go_install_dir }}"
+        remote_src: yes
+
+    - name: Create profile.d directory (if needed)
+      ansible.builtin.file:
+        path: /etc/profile.d
+        state: directory
+
+    - name: Set Go environment variables
+      ansible.builtin.lineinfile:
+        dest: "{{ item.file }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { file: '/etc/profile.d/go.sh', line: 'export GOROOT={{ go_install_dir }}/go' }
+        - { file: '/etc/profile.d/go.sh', line: 'export GOPATH=$HOME/go' }
+        - { file: '/etc/profile.d/go.sh', line: 'export PATH=$PATH:{{ go_install_dir }}/go/bin:$HOME/go/bin' }

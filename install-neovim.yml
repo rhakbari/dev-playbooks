@@ -1,0 +1,29 @@
+---
+- name: Install Neovim
+  hosts: localhost
+  become: yes
+  
+  tasks:
+  - name: Add Neovim repository
+    apt_repository:
+      repo: ppa:neovim-ppa/stable
+      state: present
+      
+  - name: Install Neovim
+    apt:
+      name: neovim
+      state: latest
+      
+  - name: Install Python support for Neovim
+    pip:
+      name: pynvim
+      state: present
+      
+  - name: Install NodeJS support for Neovim
+    npm:
+      name: neovim
+      global: yes
+      
+  - name: Install Ruby support for Neovim
+    gem:
+      name: neovim
